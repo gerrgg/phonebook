@@ -1,0 +1,11 @@
+GET http://localhost:3001/api/people/
+
+###
+
+PUT http://localhost:3001/api/people/61c10107dc086d2535ca15d2
+content-type: application/json
+
+{
+  "name": "sean",
+  "number": "231-330-123123"
+}

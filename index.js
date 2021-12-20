@@ -1,14 +1,15 @@
-var morgan = require("morgan");
-const express = require("express");
-const cors = require("cors");
+require("dotenv").config();
 
+const express = require("express");
 const app = express();
 
+var morgan = require("morgan");
 morgan.token("object", function (req, res) {
   return JSON.stringify(req.body);
 });
 
-app.use(express.static("build"));
+const cors = require("cors");
+
 app.use(cors());
 app.use(express.json());
 
@@ -18,67 +19,36 @@ app.use(
   )
 );
 
-const requestLogger = (request, response, next) => {};
+app.use(express.static("build"));
 
-let people = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
-const generateID = () => {
-  const id = people.length > 0 ? Math.max(...people.map((n) => n.id)) : 0;
-  return id + 1;
-};
-
-app.get("/info", (request, response) => {
-  const date = new Date();
-  response.send(
-    `Phonebook has info for ${people.length} people <br><br> ${date.toString()}`
-  );
-});
+const Person = require("./models/person");
 
 app.get("/api/people", (request, response) => {
-  response.json(people);
+  Person.find({}).then((people) => {
+    response.json(people);
+  });
 });
 
 app.get("/api/people/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = people.find((person) => person.id === id);
-
-  return person ? response.json(person) : response.status(204).end();
+  Person.findById(request.params.id).then((person) => {
+    response.json(person);
+  });
 });
 
-app.delete("/api/people/:id", (request, response) => {
-  const id = Number(request.params.id);
-  people = people.filter((person) => person.id !== id);
-
+app.delete("/api/people/:id", (request, response, next) => {
+  // const id = Number(request.params.id);
+  // people = people.filter((person) => person.id !== id);
   response.status(204).end();
+
+  Person.findByIdAndRemove(request.params.id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
-app.post("/api/people", (request, response) => {
+app.post("/api/people", async (request, response) => {
   const body = request.body;
-
-  const match = people.filter(
-    (p) => p.name.toLocaleLowerCase() === body.name.toLocaleLowerCase()
-  );
 
   if (!body.name || !body.number) {
     response.status(400).json({
@@ -87,23 +57,59 @@ app.post("/api/people", (request, response) => {
     return;
   }
 
-  if (match.length) {
-    response.status(400).json({
-      error: "name must be unique",
+  const match = await Person.findOne({
+    name: body.name.toLowerCase(),
+  }).exec();
+
+  if (match !== null) {
+    const person = {
+      number: body.number,
+    };
+
+    Person.findByIdAndUpdate(match.id, person, { new: true })
+      .then((updatedPerson) => {
+        response.json(updatedPerson);
+      })
+      .catch((error) => next(error));
+  } else {
+    const person = new Person({
+      name: body.name.toLowerCase(),
+      number: body.number,
+      date: new Date(),
     });
-    return;
+
+    person.save().then((savedPerson) => {
+      response.json(savedPerson);
+    });
+  }
+});
+
+app.put("/api/people/:id", (request, response, next) => {
+  Person.findByIdAndUpdate(request.params.id, request.body, { new: true })
+    .then((result) => {
+      response.json(result);
+    })
+    .catch((error) => next(error));
+});
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
+app.use(unknownEndpoint);
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
   }
 
-  const person = {
-    id: generateID(),
-    name: body.name,
-    number: body.number,
-  };
+  next(error);
+};
 
-  people = people.concat(person);
-
-  response.json(person);
-});
+// this has to be the last loaded middleware.
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 
