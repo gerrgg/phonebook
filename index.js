@@ -36,8 +36,6 @@ app.get("/api/people/:id", (request, response) => {
 });
 
 app.delete("/api/people/:id", (request, response, next) => {
-  // const id = Number(request.params.id);
-  // people = people.filter((person) => person.id !== id);
   response.status(204).end();
 
   Person.findByIdAndRemove(request.params.id)
@@ -47,15 +45,8 @@ app.delete("/api/people/:id", (request, response, next) => {
     .catch((error) => next(error));
 });
 
-app.post("/api/people", async (request, response) => {
+app.post("/api/people", async (request, response, next) => {
   const body = request.body;
-
-  if (!body.name || !body.number) {
-    response.status(400).json({
-      error: "name and number is required",
-    });
-    return;
-  }
 
   const match = await Person.findOne({
     name: body.name.toLowerCase(),
@@ -66,7 +57,10 @@ app.post("/api/people", async (request, response) => {
       number: body.number,
     };
 
-    Person.findByIdAndUpdate(match.id, person, { new: true })
+    Person.findByIdAndUpdate(match.id, person, {
+      new: true,
+      runValidators: true,
+    })
       .then((updatedPerson) => {
         response.json(updatedPerson);
       })
@@ -78,9 +72,13 @@ app.post("/api/people", async (request, response) => {
       date: new Date(),
     });
 
-    person.save().then((savedPerson) => {
-      response.json(savedPerson);
-    });
+    person
+      .save()
+      .then((savedPerson) => savedPerson.toJSON())
+      .then((savedAndFormattedPerson) => {
+        response.json(savedAndFormattedPerson);
+      })
+      .catch((error) => next(error));
   }
 });
 
@@ -103,6 +101,8 @@ const errorHandler = (error, request, response, next) => {
 
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
 
   next(error);
