@@ -101,3 +101,139 @@ We defined the environment variables for development in file .env, but the envir
 ```
 heroku config:set MONGODB_URI=mongodb+srv://fullstack:secretpasswordhere@cluster0-ostce.mongodb.net/note-app?retryWrites=true
 ```
+
+## Lint
+
+**Generically, lint or a linter is any tool that detects and flags errors in programming languages, including stylistic errors. The term lint-like behavior is sometimes applied to the process of flagging suspicious language usage. Lint-like tools generally perform static analysis of source code.**
+
+In the JavaScript universe, the current leading tool for static analysis aka. "linting" is ESlint.
+
+Let's install ESlint as a development dependency to the backend project with the command:
+
+```
+npm install eslint --save-dev
+```
+
+After this we can initialize a default ESlint configuration with the command:
+
+```
+npx eslint --init
+```
+
+<img src="https://fullstackopen.com/static/ba1423527692484103dcb2b7374eeb01/5a190/52be.png" />
+
+The configuration will be saved in the .eslintrc.js file:
+
+```
+module.exports = {
+    'env': {
+        'commonjs': true,
+        'es2021': true,
+        'node': true
+    },
+    'extends': 'eslint:recommended',
+    'parserOptions': {
+        'ecmaVersion': 12
+    },
+    'rules': {
+        'indent': [
+            'error',
+            4
+        ],
+        'linebreak-style': [
+            'error',
+            'unix'
+        ],
+        'quotes': [
+            'error',
+            'single'
+        ],
+        'semi': [
+            'error',
+            'never'
+        ],
+        'eqeqeq': 'error',
+            'no-trailing-spaces': 'error',
+    'object-curly-spacing': [
+        'error', 'always'
+    ],
+    'arrow-spacing': [
+        'error', { 'before': true, 'after': true }
+    ]
+    }
+}
+```
+
+Let's immediately change the rule concerning indentation, so that the indentation level is two spaces.
+
+```
+"indent": [
+    "error",
+    2
+],
+```
+
+It is recommended to create a separate npm script for linting:
+
+```
+{
+  // ...
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    // ...
+    "lint": "eslint ."
+  },
+  // ...
+}
+```
+
+Also the files in the build directory get checked when the command is run. We do not want this to happen, and we can accomplish this by creating an .eslintignore file in the project's root with the following contents:
+
+```
+build
+```
+
+A better alternative to executing the linter from the command line is to configure a eslint-plugin to the editor, that runs the linter continuously. By using the plugin you will see errors in your code immediately. You can find more information about the Visual Studio ESLint plugin here.
+
+https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint
+
+This makes errors easy to spot and fix right away.
+
+ESlint has a vast array of rules that are easy to take into use by editing the .eslintrc.js file.
+
+Let's add the eqeqeq rule that warns us, if equality is checked with anything but the triple equals operator. The rule is added under the rules field in the configuration file.
+
+```
+{
+  // ...
+  'rules': {
+    // ...
+   'eqeqeq': 'error',
+  },
+}
+```
+
+Let's prevent unnecessary trailing spaces at the ends of lines, let's require that there is always a space before and after curly braces, and let's also demand a consistent use of whitespaces in the function parameters of arrow functions.
+
+```
+{
+  // ...
+  'rules': {
+    // ...
+    'eqeqeq': 'error',
+    'no-trailing-spaces': 'error',
+    'object-curly-spacing': [
+        'error', 'always'
+    ],
+    'arrow-spacing': [
+        'error', { 'before': true, 'after': true }
+    ],
+    'no-console': 0
+    },
+}
+```
+
+NB when you make changes to the .eslintrc.js file, it is recommended to run the linter from the command line. This will verify that the configuration file is correctly formatted:
+
+If there is something wrong in your configuration file, the lint plugin can behave quite erratically.

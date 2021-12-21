@@ -4,7 +4,7 @@ const express = require("express");
 const app = express();
 
 var morgan = require("morgan");
-morgan.token("object", function (req, res) {
+morgan.token("object", function (req) {
   return JSON.stringify(req.body);
 });
 
@@ -39,7 +39,7 @@ app.delete("/api/people/:id", (request, response, next) => {
   response.status(204).end();
 
   Person.findByIdAndRemove(request.params.id)
-    .then((result) => {
+    .then(() => {
       response.status(204).end();
     })
     .catch((error) => next(error));
@@ -111,6 +111,7 @@ const errorHandler = (error, request, response, next) => {
 // this has to be the last loaded middleware.
 app.use(errorHandler);
 
+// eslint-disable-next-line no-undef
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {

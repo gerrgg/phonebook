@@ -13,12 +13,15 @@
     "build:ui": "rm -rf build && cd ../fso/part2/phonebook/ && npm run build && cp -r build ../../../phonebook",
     "deploy": "git push heroku main",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
-    "logs:prod": "heroku logs --tail"
+    "logs:prod": "heroku logs --tail",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "eslint": "^8.5.0",
+    "nodemon": "^2.0.15",
+    "prettier-eslint": "^13.0.0"
   },
   "dependencies": {
     "cors": "^2.8.5",
